@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AsistQR</title>
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+:root{
+  --bg:#0a0e1a; --sur:#111827; --sur2:#1a2235; --bor:#1e2d47;
+  --ac:#00e5ff; --gr:#10b981; --am:#f59e0b; --re:#ef4444;
+  --tx:#e2e8f0; --mu:#64748b;
+  --fn:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--fn);min-height:100vh}
+
+/* LOAD */
+#load{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#load p{font-size:13px;color:var(--mu)}
+.spin{width:40px;height:40px;border:3px solid var(--bor);border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* LOGIN */
+#login{display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:var(--bg)}
+#login.show{display:flex}
+.lbox{width:400px;max-width:94vw;background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:32px 28px}
+.lhead{text-align:center;margin-bottom:24px}
+.lhead h1{font-size:28px;font-weight:800;color:var(--ac)}
+.lhead p{font-size:13px;color:var(--mu);margin-top:4px}
+.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.ubtn{background:var(--sur2);border:2px solid var(--bor);border-radius:10px;padding:14px 10px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.ubtn:hover,.ubtn.sel{border-color:var(--ac);background:rgba(0,229,255,.06)}
+.uav{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#000}
+.unm{font-size:12px;font-weight:700;color:var(--tx)}
+.urol{font-size:10px;color:var(--mu);text-transform:uppercase}
+.lsep{text-align:center;color:var(--mu);font-size:11px;margin-bottom:12px;position:relative}
+.lsep::before,.lsep::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--bor)}
+.lsep::before{left:0}.lsep::after{right:0}
+.pw{position:relative;margin-bottom:14px}
+.pw input{width:100%;padding:11px 40px 11px 14px;background:var(--sur2);border:2px solid var(--bor);border-radius:10px;color:var(--tx);font-size:14px;outline:none;transition:border .2s;letter-spacing:2px}
+.pw input:focus{border-color:var(--ac)}
+.pw input.err{border-color:var(--re)}
+.eyebtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--mu);font-size:14px;padding:4px}
+.lerr{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px;font-size:12px;color:var(--re);margin-bottom:12px;display:none}
+.lbtn{width:100%;padding:12px;background:var(--ac);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s}
+.lbtn:hover{background:#00c8e0}
+.lbtn:disabled{opacity:.5;cursor:not-allowed}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.97);border-bottom:1px solid var(--bor);display:flex;align-items:center;padding:0 20px;height:54px;gap:0}
+.nlogo{font-size:18px;font-weight:800;color:var(--ac);margin-right:16px;white-space:nowrap}
+.nb{background:none;border:none;cursor:pointer;color:var(--mu);font-family:var(--fn);font-size:11px;font-weight:700;padding:0 12px;height:54px;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.nb:hover{color:var(--tx)}.nb.on{color:var(--ac);border-bottom-color:var(--ac)}
+.nright{margin-left:auto;display:flex;align-items:center;gap:8px}
+.npill{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 5px;background:var(--sur2);border:1px solid var(--bor);border-radius:20px}
+.nav-av{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#000}
+.nout{background:none;border:1px solid var(--bor);color:var(--mu);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;transition:all .2s}
+.nout:hover{border-color:var(--re);color:var(--re)}
+
+/* PAGES */
+.pg{display:none;padding:24px 20px;max-width:1280px;margin:0 auto}
+.pg.on{display:block;animation:fi .25s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+h1{font-size:24px;font-weight:800;margin-bottom:2px}
+h2{font-size:15px;font-weight:700;margin-bottom:12px}
+.sub{color:var(--mu);font-size:12px;margin-bottom:20px}
+
+/* CARDS */
+.card{background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:20px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* STATS */
+.stat{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:16px}
+.stat .n{font-size:28px;font-weight:800;letter-spacing:-1px}
+.stat .l{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.c1 .n{color:var(--ac)}.c2 .n{color:var(--gr)}.c3 .n{color:#a78bfa}.c4 .n{color:var(--am)}
+
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;text-transform:uppercase;letter-spacing:.3px}
+.bpri{background:var(--ac);color:#000}.bpri:hover{background:#00c8e0;transform:translateY(-1px)}
+.bsec{background:var(--sur2);color:var(--tx);border:1px solid var(--bor)}.bsec:hover{border-color:var(--ac);color:var(--ac)}
+.bdng{background:rgba(239,68,68,.15);color:var(--re);border:1px solid rgba(239,68,68,.3)}.bdng:hover{background:rgba(239,68,68,.25)}
+.bgrn{background:var(--gr);color:#000}.bgrn:hover{background:#0da271}
+.bsm{padding:5px 10px;font-size:10px}
+
+/* FORM */
+.fg{margin-bottom:14px}
+label{display:block;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+input,select{width:100%;padding:9px 12px;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;color:var(--tx);font-size:12px;transition:border .2s;outline:none}
+input:focus,select:focus{border-color:var(--ac)}
+select option{background:var(--sur)}
+
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:9px 12px;font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bor);text-align:left}
+td{padding:10px 12px;border-bottom:1px solid rgba(30,45,71,.5)}
+tr:hover td{background:rgba(0,229,255,.02)}
+
+/* BADGE */
+.badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.bgr{background:rgba(16,185,129,.15);color:var(--gr);border:1px solid rgba(16,185,129,.3)}
+.brd{background:rgba(239,68,68,.15);color:var(--re);border:1px solid rgba(239,68,68,.2)}
+.bam{background:rgba(245,158,11,.15);color:var(--am);border:1px solid rgba(245,158,11,.2)}
+.bcy{background:rgba(0,229,255,.1);color:var(--ac);border:1px solid rgba(0,229,255,.2)}
+
+/* SCANNER */
+.sw{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+.cambox{background:#000;border:2px solid var(--bor);border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;min-height:340px}
+#svid{width:100%;height:100%;object-fit:cover;display:none}
+#scvs{display:none}
+.cor{position:absolute;width:20px;height:20px;border-color:var(--ac);border-style:solid;opacity:.9}
+.cor.tl{top:10px;left:10px;border-width:2px 0 0 2px}
+.cor.tr{top:10px;right:10px;border-width:2px 2px 0 0}
+.cor.bl{bottom:10px;left:10px;border-width:0 0 2px 2px}
+.cor.br{bottom:10px;right:10px;border-width:0 2px 2px 0}
+.sln{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);animation:sl 2s ease-in-out infinite}
+@keyframes sl{0%{top:10px}50%{top:calc(100% - 10px)}100%{top:10px}}
+.sst{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.8));display:flex;align-items:center;justify-content:space-between}
+.sct{font-size:12px;color:var(--ac);display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ac);animation:pd 1.2s ease-in-out infinite}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.3}}
+.cph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mu)}
+.cov{position:absolute;inset:0;pointer-events:none;display:none}
+.detlist{background:var(--sur);border:1px solid var(--bor);border-radius:10px;max-height:340px;overflow-y:auto}
+.di{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(30,45,71,.5)}
+.di:last-child{border-bottom:none}
+.dav{width:30px;height:30px;border-radius:7px;background:var(--sur2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ac);border:1px solid var(--bor);flex-shrink:0}
+.din{flex:1;min-width:0}
+.dn{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm{font-size:10px;color:var(--mu)}
+.dt{font-size:10px;color:var(--mu);flex-shrink:0}
+
+/* SESSION BAR */
+.sbar{background:var(--sur);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;display:none}
+.sib{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:11px}
+.si{display:flex;flex-direction:column;gap:1px}
+.sil{color:var(--mu);font-size:9px;text-transform:uppercase;letter-spacing:.5px}
+.siv{color:var(--ac);font-weight:600}
+
+/* QR */
+.qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.qc{background:white;border-radius:10px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
+.qcid{font-size:9px;color:#94a3b8;position:absolute;top:6px;right:8px}
+.qcnm{font-size:12px;font-weight:800;color:#0f172a;text-align:center;line-height:1.2}
+.qcco{font-size:9px;color:#64748b;text-align:center}
+.qw canvas,.qw img{width:130px!important;height:130px!important}
+
+/* MODAL */
+.mb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.mb.on{display:flex}
+.modal{background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:24px;width:440px;max-width:92vw;position:relative}
+.mcl{position:absolute;top:12px;right:12px;background:var(--sur2);border:1px solid var(--bor);color:var(--mu);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.mcl:hover{color:var(--tx)}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:10px 16px;font-size:12px;display:flex;align-items:center;gap:8px;z-index:9999;transform:translateY(60px);opacity:0;transition:all .3s;max-width:280px;pointer-events:none}
+#toast.on{transform:translateY(0);opacity:1}
+
+/* MISC */
+.pb{height:5px;background:var(--sur2);border-radius:3px;overflow:hidden;margin-top:6px}
+.pf{height:100%;border-radius:3px;background:var(--gr);transition:width .5s}
+.empty{text-align:center;padding:28px;color:var(--mu);font-size:12px}
+.tabs{display:flex;gap:3px;background:var(--sur2);border-radius:8px;padding:3px;margin-bottom:16px;width:fit-content}
+.tab{padding:7px 16px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;color:var(--mu);background:none;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
+.tab.on{background:var(--sur);color:var(--tx)}
+
+@media(max-width:840px){.sw{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.nb{padding:0 8px;font-size:10px}}
+@media print{nav,.noprint,#login{display:none!important} body{background:white} .pg{display:block!important;padding:0} #pgQR{display:block!important} .qg{grid-template-columns:repeat(4,1fr);gap:8px} .qc{break-inside:avoid;border:1px solid #e2e8f0}}
+</style>
+</head>
+<body>
+
+<div id="load"><div class="spin"></div><p>Iniciando AsistQR...</p></div>
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lbox">
+    <div class="lhead">
+      <h1>AsistQR</h1>
+      <p>Sistema de Asistencia con QR</p>
+    </div>
+    <div class="ugrid" id="ugrid"></div>
+    <div class="lsep">contrasena</div>
+    <div class="pw">
+      <input type="password" id="lpass" placeholder="Ingresa tu contrasena"
+        onkeydown="if(event.key==='Enter')doLogin()"
+        oninput="this.classList.remove('err')">
+      <button class="eyebtn" onclick="togglePw()">ver</button>
+    </div>
+    <div class="lerr" id="lerr"></div>
+    <button class="lbtn" id="lbtn" onclick="doLogin()" disabled>Ingresar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<nav>
+  <div class="nlogo">AsistQR</div>
+  <button class="nb on" onclick="go('pgDash',this)">Dashboard</button>
+  <button class="nb" onclick="go('pgScan',this)">Escaner</button>
+  <button class="nb" id="nbStu" onclick="go('pgStu',this)">Estudiantes</button>
+  <button class="nb" onclick="go('pgQR',this)">Tarjetas QR</button>
+  <button class="nb" onclick="go('pgRpt',this)">Reportes</button>
+  <div class="nright">
+    <div class="npill">
+      <div class="nav-av" id="nav-av">?</div>
+      <div>
+        <div id="nav-nm" style="font-size:12px;font-weight:700">-</div>
+        <div id="nav-rl" style="font-size:10px;color:var(--mu)">-</div>
+      </div>
+    </div>
+    <button class="nout" onclick="logout()">Salir</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="pgDash" class="pg on">
+  <h1>Dashboard</h1>
+  <p class="sub">Resumen general del sistema</p>
+  <div class="g4" style="margin-bottom:18px">
+    <div class="stat c1"><div class="n" id="dTot">-</div><div class="l">Estudiantes</div></div>
+    <div class="stat c2"><div class="n" id="dHoy">-</div><div class="l">Presentes Hoy</div></div>
+    <div class="stat c3"><div class="n" id="dSes">-</div><div class="l">Mis Sesiones</div></div>
+    <div class="stat c4"><div class="n" id="dRat">-</div><div class="l">Tasa Asistencia</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <h2>Ultimas Sesiones</h2>
+      <div id="dSesL"><div class="empty">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <h2>Acceso Rapido</h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn bpri" onclick="go('pgScan',document.querySelectorAll('.nb')[1])" style="justify-content:center">Ir al Escaner</button>
+        <button class="btn bsec" onclick="go('pgQR',document.querySelectorAll('.nb')[3])" style="justify-content:center">Ver Tarjetas QR</button>
+        <button class="btn bsec" onclick="go('pgRpt',document.querySelectorAll('.nb')[4])" style="justify-content:center">Ver Reportes</button>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.1);border-radius:8px;font-size:11px">
+        <div style="color:var(--mu);font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Sesion activa como</div>
+        <div id="dUser" style="color:var(--gr);font-weight:700">-</div>
+        <div id="dRole" style="color:var(--mu);margin-top:2px">-</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div id="pgScan" class="pg">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div><h1>Escaner QR Masivo</h1><p class="sub" style="margin-bottom:0">Detecta multiples QR al mismo tiempo</p></div>
+    <div id="sbBtns"><button class="btn bpri" onclick="openSM()">Nueva Sesion</button></div>
+  </div>
+  <div class="sbar" id="sbar">
+    <div class="sib">
+      <div class="si"><div class="sil">Materia</div><div class="siv" id="si-s">-</div></div>
+      <div class="si"><div class="sil">Curso</div><div class="siv" id="si-c">-</div></div>
+      <div class="si"><div class="sil">Profesor</div><div class="siv" id="si-t">-</div></div>
+      <div class="si"><div class="sil">Detectados</div><div class="siv" id="si-n">0</div></div>
+      <div style="margin-left:auto"><button class="btn bdng bsm" onclick="endSess()">Cerrar Sesion</button></div>
+    </div>
+  </div>
+  <div class="sw">
+    <div>
+      <div class="cambox">
+        <div class="cph" id="cph">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <p style="font-size:13px">Activa la camara para comenzar</p>
+        </div>
+        <video id="svid" autoplay playsinline muted></video>
+        <canvas id="scvs"></canvas>
+        <div class="cov" id="cov">
+          <div class="cor tl"></div><div class="cor tr"></div>
+          <div class="cor bl"></div><div class="cor br"></div>
+          <div class="sln"></div>
+          <div class="sst">
+            <div class="sct"><div class="dot"></div><span id="sLbl">Escaneando...</span></div>
+            <div style="font-size:10px;color:var(--mu)" id="fpsL"></div>
+          </div>
+        </div>
+      </div>
+      <div class="noprint" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bpri" id="bStartC" onclick="startCam()">Activar Camara</button>
+        <button class="btn bsec" id="bStopC" onclick="stopCam()" style="display:none">Detener</button>
+        <button class="btn bsec" onclick="clearDet()">Limpiar</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h2 style="margin-bottom:0">Detectados</h2>
+        <span class="badge bcy" id="dCnt">0</span>
+      </div>
+      <div class="detlist" id="detList">
+        <div class="empty" style="font-size:11px">Apunta la camara a los QR</div>
+      </div>
+      <button class="btn bgrn" id="bSave" onclick="saveAtt()" style="width:100%;justify-content:center;opacity:.4" disabled>
+        Guardar Asistencia en Sheets
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENTS -->
+<div id="pgStu" class="pg">
+  <h1>Estudiantes</h1>
+  <p class="sub">Gestion de base de datos</p>
+  <div id="stuAdmin">
+    <div class="g2" style="margin-bottom:18px">
+      <div class="card">
+        <h2>Agregar Estudiante</h2>
+        <div class="fg"><label>Nombre Completo</label><input id="sn" placeholder="Ej: Maria Lopez"></div>
+        <div class="g2">
+          <div class="fg"><label>Curso</label><input id="sc" placeholder="Ej: 3ro A"></div>
+          <div class="fg"><label>Materia</label><input id="sm" placeholder="Ej: Matematicas"></div>
+        </div>
+        <div class="fg"><label>Profesor</label><input id="st" placeholder="Ej: Prof. Gomez"></div>
+        <button class="btn bpri" onclick="addStu()" style="width:100%;justify-content:center">+ Agregar</button>
+      </div>
+      <div class="card">
+        <h2>Importar CSV</h2>
+        <p style="font-size:12px;color:var(--mu);margin-bottom:14px;line-height:1.6">
+          Formato del archivo:<br>
+          <code style="background:var(--sur2);padding:2px 6px;border-radius:4px;font-size:11px">nombre, curso, materia, profesor</code>
+        </p>
+        <div class="fg"><label>Archivo CSV</label><input type="file" id="csvF" accept=".csv" onchange="importCSV(this)" style="padding:7px"></div>
+        <button class="btn bsec" onclick="loadSample()" style="width:100%;justify-content:center">Cargar datos de ejemplo</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h2 style="margin-bottom:0">Listado de Estudiantes</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="stQ" placeholder="Buscar..." style="width:160px" oninput="renderStu()">
+          <span class="badge bcy" id="stCnt">0</span>
+          <button class="btn bsec bsm" onclick="loadAll()">Actualizar</button>
+        </div>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>ID</th><th>Nombre</th><th>Curso</th><th>Materia</th><th>Profesor</th><th></th></tr></thead>
+          <tbody id="stBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="stuNoAdmin" style="display:none;padding:24px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3);border-radius:10px;text-align:center;color:var(--am);font-size:13px">
+    Esta seccion es solo para el Administrador
+  </div>
+</div>
+
+<!-- QR CARDS -->
+<div id="pgQR" class="pg">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <h1>Tarjetas QR</h1>
+    <div class="noprint" style="display:flex;gap:8px">
+      <select id="qrF" onchange="renderQR()" style="width:150px"><option value="">Todos los cursos</option></select>
+      <button class="btn bpri" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+  <p class="sub">Una tarjeta por estudiante - imprimir y entregar</p>
+  <div class="qg" id="qgrid"><div class="empty">Cargando...</div></div>
+</div>
+
+<!-- REPORTS -->
+<div id="pgRpt" class="pg">
+  <h1>Reportes</h1>
+  <p class="sub" id="rptSub">Historial de asistencia</p>
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('tS',this)">Por Sesion</button>
+    <button class="tab" onclick="showTab('tE',this)">Por Estudiante</button>
+  </div>
+  <div id="tS"><div id="rSes"><div class="empty">Cargando...</div></div></div>
+  <div id="tE" style="display:none">
+    <div class="card">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <select id="rCrs" style="width:160px" onchange="renderStuR()"><option value="">Todos los cursos</option></select>
+        <button class="btn bsec bsm" onclick="loadRpt()">Actualizar</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Estudiante</th><th>Curso</th><th>Materia</th><th>Sesiones</th><th>Presencias</th><th>%</th></tr></thead>
+          <tbody id="rStuB"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /app -->
+
+<!-- MODAL SESION -->
+<div id="mSes" class="mb">
+  <div class="modal">
+    <button class="mcl" onclick="closeMod('mSes')">X</button>
+    <h2>Nueva Sesion de Asistencia</h2>
+    <p style="font-size:12px;color:var(--mu);margin-bottom:16px">Configura antes de escanear</p>
+    <div class="fg"><label>Materia</label><select id="ms"><option value="">Todas</option></select></div>
+    <div class="fg"><label>Curso</label><select id="mc"><option value="">Todos</option></select></div>
+    <div class="fg"><label>Profesor</label><select id="mt"><option value="">Todos</option></select></div>
+    <div class="fg"><label>Fecha</label><input type="date" id="md"></div>
+    <button class="btn bpri" onclick="startSess()" style="width:100%;justify-content:center;margin-top:6px">Iniciar Sesion</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACION - PON AQUI LA URL DE TU WEB APP
+// Ejemplo: 'https://script.google.com/macros/s/AKfycb.../exec'
+// ============================================================
+var API = 'PEGA_AQUI_TU_URL';
+
+// ============================================================
+// ESTADO
+// ============================================================
+var CU   = null;
+var DATA = { students:[], sessions:[], attendance:[] };
+var SESS = null;
+var DET  = {};
+var CAM  = null;
+var SCIV = null, FPIV = null;
+
+// ============================================================
+// API
+// ============================================================
+function api(action, data) {
+  return fetch(API, {
+    method: 'POST',
+    body: JSON.stringify({ action: action, data: data || {} }),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(j) {
+    if (!j.ok) throw new Error(j.error || 'Error');
+    return j;
+  });
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+window.addEventListener('load', function() {
+  document.getElementById('md').value = new Date().toISOString().split('T')[0];
+
+  if (API === 'PEGA_AQUI_TU_URL') {
+    document.getElementById('load').innerHTML =
+      '<div style="color:#ef4444;font-family:monospace;padding:30px;text-align:center;max-width:460px">' +
+      '<strong style="font-size:15px">Falta configurar la URL</strong><br><br>' +
+      'En el archivo Index.html busca la linea:<br>' +
+      '<code style="background:#1e293b;padding:4px 8px;border-radius:4px;display:inline-block;margin:8px 0">var API = \'PEGA_AQUI_TU_URL\';</code><br>' +
+      'y reemplaza PEGA_AQUI_TU_URL con la URL de tu Web App de Apps Script' +
+      '</div>';
+    return;
+  }
+
+  api('getUsers')
+    .then(function(r) {
+      buildGrid(r.users || []);
+      document.getElementById('load').style.display = 'none';
+      document.getElementById('login').classList.add('show');
+    })
+    .catch(function(e) {
+      document.getElementById('load').innerHTML =
+        '<div style="color:#ef4444;font-family:monospace;padding:30px;text-align:center;max-width:460px">' +
+        '<strong>No se pudo conectar</strong><br><br>' + e.message +
+        '<br><br><button onclick="location.reload()" style="background:#00e5ff;color:#000;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700">Reintentar</button>' +
+        '</div>';
+    });
+});
+
+// ============================================================
+// LOGIN
+// ============================================================
+var selU = null;
+
+function buildGrid(users) {
+  var g = document.getElementById('ugrid');
+  g.innerHTML = users.map(function(u) {
+    return '<button class="ubtn" id="ub-' + u.id + '" onclick="selectU(\'' + u.id + '\')">' +
+      '<div class="uav" style="background:' + u.color + '">' + u.name.charAt(0) + '</div>' +
+      '<div class="unm">' + u.name + '</div>' +
+      '<div class="urol">' + u.role + '</div>' +
+      '</button>';
+  }).join('');
+}
+
+function selectU(id) {
+  selU = id;
+  var btns = document.querySelectorAll('.ubtn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('sel');
+  document.getElementById('ub-' + id).classList.add('sel');
+  document.getElementById('lbtn').disabled = false;
+  document.getElementById('lpass').focus();
+  document.getElementById('lerr').style.display = 'none';
+}
+
+function togglePw() {
+  var i = document.getElementById('lpass');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+function doLogin() {
+  if (!selU) { showLerr('Selecciona un usuario'); return; }
+  var pass = document.getElementById('lpass').value;
+  if (!pass) { showLerr('Ingresa tu contrasena'); return; }
+
+  var btn = document.getElementById('lbtn');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+
+  api('login', { userId: selU, password: pass })
+    .then(function(r) {
+      CU = r.user;
+      document.getElementById('lpass').value = '';
+      document.getElementById('login').classList.remove('show');
+      document.getElementById('app').style.display = 'block';
+      initApp();
+    })
+    .catch(function(e) {
+      showLerr(e.message);
+      document.getElementById('lpass').classList.add('err');
+      btn.disabled = false; btn.textContent = 'Ingresar';
+    });
+}
+
+function showLerr(msg) {
+  var e = document.getElementById('lerr');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+function logout() {
+  if (!confirm('Cerrar sesion?')) return;
+  stopCam();
+  CU = null; DATA = { students:[], sessions:[], attendance:[] };
+  SESS = null; DET = {};
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').classList.add('show');
+  selU = null;
+  var btns = document.querySelectorAll('.ubtn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('sel');
+  document.getElementById('lbtn').disabled = true;
+}
+
+// ============================================================
+// INIT APP
+// ============================================================
+function initApp() {
+  document.getElementById('nav-nm').textContent = CU.name;
+  document.getElementById('nav-rl').textContent = CU.role === 'admin' ? 'Administrador' : 'Regente';
+  var av = document.getElementById('nav-av');
+  av.textContent = CU.name.charAt(0); av.style.background = CU.color;
+  document.getElementById('dUser').textContent = CU.name;
+  document.getElementById('dRole').textContent = CU.role === 'admin' ? 'Administrador - Acceso total' : 'Regente - Solo escaneo';
+
+  if (CU.role !== 'admin') {
+    document.getElementById('nbStu').style.display = 'none';
+    document.getElementById('stuAdmin').style.display = 'none';
+    document.getElementById('stuNoAdmin').style.display = 'block';
+    document.getElementById('rptSub').textContent = 'Tus sesiones registradas - ' + CU.name;
+  }
+
+  go('pgDash', document.querySelector('.nb'));
+  loadAll();
+}
+
+function loadAll() {
+  Promise.all([
+    api('getStats',    { userId: CU.id }),
+    api('getStudents', {}),
+    api('getSessions', { userId: CU.id })
+  ]).then(function(res) {
+    var stats = res[0], stuR = res[1], sesR = res[2];
+    document.getElementById('dTot').textContent = stats.totalStudents    || 0;
+    document.getElementById('dHoy').textContent = stats.presentToday     || 0;
+    document.getElementById('dSes').textContent = stats.totalSessions    || 0;
+    document.getElementById('dRat').textContent = (stats.attendanceRate  || 0) + '%';
+    DATA.students = stuR.students || [];
+    DATA.sessions = sesR.sessions || [];
+    renderStu(); renderQR(); renderDashSes(); fillFilters();
+    renderSesR(); renderStuR();
+  }).catch(function(e) { toast(e.message, 1); });
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function go(id, btn) {
+  var pgs = document.querySelectorAll('.pg');
+  for (var i = 0; i < pgs.length; i++) pgs[i].classList.remove('on');
+  var nbs = document.querySelectorAll('.nb');
+  for (var i = 0; i < nbs.length; i++) nbs[i].classList.remove('on');
+  document.getElementById(id).classList.add('on');
+  if (btn) btn.classList.add('on');
+  if (id === 'pgQR')  renderQR();
+  if (id === 'pgRpt') loadRpt();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashSes() {
+  var el = document.getElementById('dSesL');
+  var r = DATA.sessions.slice().reverse().slice(0,5);
+  if (!r.length) { el.innerHTML = '<div class="empty">Sin sesiones aun.</div>'; return; }
+  el.innerHTML = r.map(function(s) {
+    return '<div style="padding:10px;background:var(--sur2);border-radius:8px;border:1px solid var(--bor);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">' +
+      '<div><div style="font-weight:700;font-size:12px">' + (s.subject||'-') + ' - ' + (s.course||'Todos') + '</div>' +
+      '<div style="font-size:10px;color:var(--mu)">' + s.date + ' - ' + (s.regenteName||s.registeredBy||'-') + '</div></div>' +
+      '<span class="badge bgr">' + (s.totalPresent||0) + ' presentes</span>' +
+      '</div>';
+  }).join('');
+}
+
+// ============================================================
+// STUDENTS
+// ============================================================
+function addStu() {
+  var nm=document.getElementById('sn').value.trim();
+  var cr=document.getElementById('sc').value.trim();
+  var su=document.getElementById('sm').value.trim();
+  var tc=document.getElementById('st').value.trim();
+  if (!nm||!cr||!su||!tc) { toast('Completa todos los campos', 1); return; }
+  showLoad(1);
+  api('addStudent', { userId:CU.id, name:nm, course:cr, subject:su, teacher:tc })
+    .then(function(r) {
+      DATA.students.push(r.student);
+      renderStu(); renderQR(); fillFilters();
+      document.getElementById('sn').value='';
+      document.getElementById('sc').value='';
+      document.getElementById('sm').value='';
+      document.getElementById('st').value='';
+      toast(nm + ' agregado');
+    })
+    .catch(function(e) { toast(e.message, 1); })
+    .finally(function() { showLoad(0); });
+}
+
+function delStu(id) {
+  if (!confirm('Eliminar este estudiante?')) return;
+  api('deleteStudent', { userId:CU.id, id:id })
+    .then(function() {
+      DATA.students = DATA.students.filter(function(s) { return s.id !== id; });
+      renderStu(); renderQR(); toast('Eliminado');
+    })
+    .catch(function(e) { toast(e.message, 1); });
+}
+
+function renderStu() {
+  var body = document.getElementById('stBody');
+  var q = document.getElementById('stQ').value.toLowerCase();
+  var list = DATA.students.filter(function(s) {
+    if (!q) return true;
+    return [s.name,s.course,s.subject,s.teacher].some(function(v) { return v.toLowerCase().indexOf(q) >= 0; });
+  });
+  document.getElementById('stCnt').textContent = DATA.students.length;
+  if (!list.length) { body.innerHTML = '<tr><td colspan="6" class="empty">Sin estudiantes</td></tr>'; return; }
+  body.innerHTML = list.map(function(s) {
+    return '<tr><td style="font-size:10px;color:var(--mu)">' + s.id + '</td>' +
+      '<td><strong>' + s.name + '</strong></td><td>' + s.course + '</td>' +
+      '<td>' + s.subject + '</td><td>' + s.teacher + '</td>' +
+      '<td>' + (CU.role==='admin' ? '<button class="btn bsm bdng" onclick="delStu(\''+s.id+'\')">Eliminar</button>' : '') + '</td></tr>';
+  }).join('');
+}
+
+function importCSV(inp) {
+  var f = inp.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    var lines = e.target.result.split('\n').filter(function(l) { return l.trim(); });
+    var sts = [];
+    lines.forEach(function(l, i) {
+      if (i===0 && l.toLowerCase().indexOf('nombre') >= 0) return;
+      var p = l.split(',').map(function(x) { return x.trim().replace(/"/g,''); });
+      if (p.length >= 4) sts.push({ name:p[0], course:p[1], subject:p[2], teacher:p[3] });
+    });
+    if (!sts.length) { toast('No se encontraron datos', 1); return; }
+    showLoad(1);
+    api('importStudents', { userId:CU.id, students:sts })
+      .then(function(res) { loadAll(); toast(res.added + ' estudiantes importados'); })
+      .catch(function(e) { toast(e.message, 1); })
+      .finally(function() { showLoad(0); });
+  };
+  r.readAsText(f);
+}
+
+function loadSample() {
+  var s = [
+    {name:'Carlos Mamani', course:'3ro A', subject:'Matematicas', teacher:'Prof. Rivera'},
+    {name:'Sofia Quispe',  course:'3ro A', subject:'Matematicas', teacher:'Prof. Rivera'},
+    {name:'Diego Flores',  course:'3ro A', subject:'Matematicas', teacher:'Prof. Rivera'},
+    {name:'Valentina Cruz',course:'3ro B', subject:'Historia',    teacher:'Prof. Mendoza'},
+    {name:'Andres Torrico',course:'3ro B', subject:'Historia',    teacher:'Prof. Mendoza'},
+    {name:'Camila Vega',   course:'2do A', subject:'Ciencias',    teacher:'Prof. Alarcon'},
+    {name:'Lucia Pena',    course:'2do A', subject:'Ciencias',    teacher:'Prof. Alarcon'},
+    {name:'Sebastian Rojas',course:'4to A',subject:'Fisica',      teacher:'Prof. Gutierrez'},
+    {name:'Isabella Vargas',course:'4to A',subject:'Fisica',      teacher:'Prof. Gutierrez'}
+  ];
+  showLoad(1);
+  api('importStudents', { userId:CU.id, students:s })
+    .then(function(r) { loadAll(); toast('Datos de ejemplo cargados (' + r.added + ')'); })
+    .catch(function(e) { toast(e.message, 1); })
+    .finally(function() { showLoad(0); });
+}
+
+// ============================================================
+// QR CARDS
+// ============================================================
+function fillFilters() {
+  var cs={}, su={}, tc={};
+  DATA.students.forEach(function(s) { cs[s.course]=1; su[s.subject]=1; tc[s.teacher]=1; });
+  var cArr = Object.keys(cs).sort();
+  var sArr = Object.keys(su).sort();
+  var tArr = Object.keys(tc).sort();
+  document.getElementById('ms').innerHTML = '<option value="">Todas</option>' + sArr.map(function(x) { return '<option>'+x+'</option>'; }).join('');
+  document.getElementById('mc').innerHTML = '<option value="">Todos</option>' + cArr.map(function(x) { return '<option>'+x+'</option>'; }).join('');
+  document.getElementById('mt').innerHTML = '<option value="">Todos</option>' + tArr.map(function(x) { return '<option>'+x+'</option>'; }).join('');
+  var qf = document.getElementById('qrF'); var cur = qf.value;
+  qf.innerHTML = '<option value="">Todos los cursos</option>' + cArr.map(function(x) { return '<option'+(x===cur?' selected':'')+'>'+x+'</option>'; }).join('');
+  document.getElementById('rCrs').innerHTML = '<option value="">Todos los cursos</option>' + cArr.map(function(x) { return '<option>'+x+'</option>'; }).join('');
+}
+
+function renderQR() {
+  fillFilters();
+  var g = document.getElementById('qgrid');
+  var f = document.getElementById('qrF').value;
+  var list = DATA.students.filter(function(s) { return !f || s.course === f; });
+  if (!list.length) { g.innerHTML = '<div class="empty" style="grid-column:1/-1">Sin estudiantes.</div>'; return; }
+  g.innerHTML = list.map(function(s) {
+    return '<div class="qc" id="qc-'+s.id+'">' +
+      '<div class="qcid">'+s.id+'</div>' +
+      '<div class="qw" id="qw-'+s.id+'"></div>' +
+      '<div class="qcnm">'+s.name+'</div>' +
+      '<div class="qcco">'+s.course+' - '+s.subject+'</div>' +
+      '</div>';
+  }).join('');
+  list.forEach(function(s) {
+    var w = document.getElementById('qw-'+s.id);
+    if (!w || w._q) return;
+    try { new QRCode(w, {text:s.id,width:130,height:130,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H}); w._q=true; } catch(e){}
+  });
+}
+
+// ============================================================
+// SCANNER
+// ============================================================
+function startCam() {
+  // Verificar soporte basico
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    // Intentar el metodo antiguo para navegadores viejos
+    var gum = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    if (!gum) {
+      showCamError('Tu navegador no soporta acceso a camara. Usa Chrome actualizado.');
+      return;
+    }
+  }
+
+  // Verificar que la pagina es HTTPS (requerido para camara en movil)
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    showCamError('La camara requiere conexion segura (HTTPS). Verifica la URL del sistema.');
+    return;
+  }
+
+  // Intentar primero con camara trasera, si falla intentar cualquier camara
+  var constraints1 = {video:{facingMode:{exact:'environment'}}};
+  var constraints2 = {video:{facingMode:'environment'}};
+  var constraints3 = {video:true};
+
+  navigator.mediaDevices.getUserMedia(constraints1)
+    .catch(function() { return navigator.mediaDevices.getUserMedia(constraints2); })
+    .catch(function() { return navigator.mediaDevices.getUserMedia(constraints3); })
+    .then(function(stream) {
+      onCamReady(stream);
+    })
+    .catch(function(e) {
+      var msg = e.name + ': ' + e.message;
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        showCamError('PERMISO DENEGADO. Ve a Ajustes del celular > Aplicaciones > Chrome > Permisos > Camara > Permitir. Luego recarga la pagina.');
+      } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+        showCamError('No se encontro camara en este dispositivo.');
+      } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+        showCamError('La camara esta siendo usada por otra aplicacion. Cierra otras apps y vuelve a intentar.');
+      } else if (e.name === 'OverconstrainedError') {
+        showCamError('Camara no compatible con la configuracion. Intenta desde otro navegador.');
+      } else {
+        showCamError('Error al activar camara: ' + msg + '. Intenta recargar la pagina.');
+      }
+    });
+}
+
+function onCamReady(stream) {
+  CAM = stream;
+  var v = document.getElementById('svid');
+  v.srcObject = CAM;
+  v.style.display = 'block';
+  document.getElementById('cph').style.display = 'none';
+  document.getElementById('cov').style.display = 'block';
+  document.getElementById('bStartC').style.display = 'none';
+  document.getElementById('bStopC').style.display = 'flex';
+  v.addEventListener('loadedmetadata', startScan, {once:true});
+  toast('Camara activada');
+}
+
+function showCamError(msg) {
+  document.getElementById('cph').innerHTML =
+    '<div style="padding:20px;text-align:center;max-width:280px">' +
+    '<div style="font-size:28px;margin-bottom:10px">X</div>' +
+    '<div style="font-size:12px;color:#ef4444;line-height:1.6;margin-bottom:14px">' + msg + '</div>' +
+    '<button onclick="startCam()" class="btn bpri" style="font-size:11px">Reintentar</button>' +
+    '</div>';
+  document.getElementById('cph').style.display = 'flex';
+}
+
+function stopCam() {
+  if (CAM) { CAM.getTracks().forEach(function(t) { t.stop(); }); CAM = null; }
+  clearInterval(SCIV); clearInterval(FPIV);
+  var v = document.getElementById('svid');
+  v.srcObject = null; v.style.display = 'none';
+  document.getElementById('cph').style.display = 'flex';
+  document.getElementById('cov').style.display = 'none';
+  document.getElementById('bStartC').style.display = 'flex';
+  document.getElementById('bStopC').style.display = 'none';
+}
+
+function startScan() {
+  var vid = document.getElementById('svid');
+  var cvs = document.getElementById('scvs');
+  var ctx = cvs.getContext('2d', {willReadFrequently:true});
+  var fr = 0; var seen = {};  var CD = 4000;
+  FPIV = setInterval(function() { document.getElementById('fpsL').textContent = fr + ' fps'; fr = 0; }, 1000);
+  SCIV = setInterval(function() {
+    if (!vid.videoWidth) return; fr++;
+    cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+    ctx.drawImage(vid, 0, 0);
+    var now = Date.now(), W = cvs.width, H = cvs.height;
+    var zones = [
+      {x:0,y:0,w:W,h:H},{x:0,y:0,w:W/2,h:H/2},{x:W/2,y:0,w:W/2,h:H/2},
+      {x:0,y:H/2,w:W/2,h:H/2},{x:W/2,y:H/2,w:W/2,h:H/2},
+      {x:W/4,y:0,w:W/2,h:H},{x:0,y:H/4,w:W,h:H/2}
+    ];
+    zones.forEach(function(z) {
+      var d = ctx.getImageData(z.x, z.y, z.w, z.h);
+      var c = jsQR(d.data, z.w, z.h, {inversionAttempts:'dontInvert'});
+      if (c && c.data) {
+        var id = c.data.trim();
+        if (!seen[id] || (now - seen[id]) > CD) { seen[id] = now; onQR(id); }
+      }
+    });
+    var cnt = Object.keys(DET).length;
+    document.getElementById('sLbl').textContent = 'Escaneando... ' + cnt + ' detectados';
+    document.getElementById('si-n').textContent = cnt;
+  }, 100);
+}
+
+function onQR(id) {
+  var s = null;
+  for (var i = 0; i < DATA.students.length; i++) {
+    if (DATA.students[i].id === id) { s = DATA.students[i]; break; }
+  }
+  if (!s || !SESS || DET[s.id]) return;
+  if (SESS.course  && s.course  !== SESS.course)  return;
+  if (SESS.subject && s.subject !== SESS.subject) return;
+  DET[s.id] = true;
+  var list = document.getElementById('detList');
+  var em = list.querySelector('.empty'); if (em) em.remove();
+  var init = s.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
+  var time = new Date().toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'});
+  var d = document.createElement('div'); d.className = 'di';
+  d.innerHTML = '<div class="dav">'+init+'</div><div class="din"><div class="dn">'+s.name+'</div><div class="dm">'+s.course+' - '+s.subject+'</div></div><div class="dt">'+time+'</div>';
+  list.insertBefore(d, list.firstChild);
+  var cnt = Object.keys(DET).length;
+  document.getElementById('dCnt').textContent = cnt;
+  var b = document.getElementById('bSave'); b.disabled = false; b.style.opacity = '1';
+  toast(s.name + ' detectado');
+}
+
+function clearDet() {
+  DET = {};
+  document.getElementById('detList').innerHTML = '<div class="empty" style="font-size:11px">Apunta la camara a los QR</div>';
+  document.getElementById('dCnt').textContent = '0';
+  document.getElementById('si-n').textContent = '0';
+  var b = document.getElementById('bSave'); b.disabled = true; b.style.opacity = '.4';
+}
+
+// ============================================================
+// SESSION
+// ============================================================
+function openSM() { fillFilters(); document.getElementById('mSes').classList.add('on'); }
+function closeMod(id) { document.getElementById(id).classList.remove('on'); }
+
+function startSess() {
+  var sub = document.getElementById('ms').value;
+  var crs = document.getElementById('mc').value;
+  var tch = document.getElementById('mt').value;
+  var dt  = document.getElementById('md').value;
+  SESS = { id:'SES'+Date.now().toString(36).toUpperCase(), subject:sub, course:crs, teacher:tch, date:dt, startTime:new Date().toISOString() };
+  DET = {};
+  document.getElementById('si-s').textContent = sub || 'Todas';
+  document.getElementById('si-c').textContent = crs || 'Todos';
+  document.getElementById('si-t').textContent = tch || 'Todos';
+  document.getElementById('si-n').textContent = '0';
+  document.getElementById('sbar').style.display = 'block';
+  document.getElementById('sbBtns').innerHTML = '<span style="font-size:11px;color:var(--gr)">Sesion activa - ' + CU.name + '</span>';
+  clearDet(); closeMod('mSes'); toast('Sesion iniciada');
+}
+
+function endSess() {
+  if (!SESS) return;
+  var cnt = Object.keys(DET).length;
+  if (cnt === 0 && !confirm('Cerrar sin registros?')) return;
+  showLoad(1);
+  api('saveSession', { id:SESS.id, subject:SESS.subject, course:SESS.course, teacher:SESS.teacher,
+    date:SESS.date, startTime:SESS.startTime, endTime:new Date().toISOString(),
+    totalPresent:cnt, userId:CU.id })
+    .then(function() {
+      DATA.sessions.push({ id:SESS.id, subject:SESS.subject, course:SESS.course, teacher:SESS.teacher,
+        date:SESS.date, totalPresent:cnt, registeredBy:CU.id, regenteName:CU.name });
+      SESS = null;
+      document.getElementById('sbar').style.display = 'none';
+      document.getElementById('sbBtns').innerHTML = '<button class="btn bpri" onclick="openSM()">Nueva Sesion</button>';
+      renderDashSes(); toast('Sesion guardada en Sheets');
+    })
+    .catch(function(e) { toast(e.message, 1); })
+    .finally(function() { showLoad(0); });
+}
+
+function saveAtt() {
+  var keys = Object.keys(DET);
+  if (!keys.length || !SESS) { toast('Sin datos', 1); return; }
+  var records = keys.map(function(id) {
+    var s = null;
+    for (var i = 0; i < DATA.students.length; i++) { if (DATA.students[i].id === id) { s = DATA.students[i]; break; } }
+    return { sessionId:SESS.id, studentId:id, name:s?s.name:'', course:s?s.course:'', subject:s?s.subject:'', date:SESS.date, time:new Date().toLocaleTimeString('es-BO') };
+  });
+  showLoad(1);
+  api('saveAttendance', { sessionId:SESS.id, records:records, userId:CU.id })
+    .then(function(r) { toast(r.saved + ' asistencias guardadas en Sheets'); })
+    .catch(function(e) { toast(e.message, 1); })
+    .finally(function() { showLoad(0); });
+}
+
+// ============================================================
+// REPORTS
+// ============================================================
+function loadRpt() {
+  var f = CU.role === 'regente' ? { registeredBy: CU.id } : {};
+  Promise.all([
+    api('getReport', f),
+    api('getSessions', { userId: CU.id })
+  ]).then(function(res) {
+    DATA.attendance = res[0].records || [];
+    DATA.sessions   = res[1].sessions || [];
+    renderSesR(); renderStuR(); fillFilters();
+  }).catch(function(e) { toast(e.message, 1); });
+}
+
+function showTab(tab, btn) {
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('on');
+  btn.classList.add('on');
+  document.getElementById('tS').style.display = tab === 'tS' ? 'block' : 'none';
+  document.getElementById('tE').style.display = tab === 'tE' ? 'block' : 'none';
+}
+
+function renderSesR() {
+  var el = document.getElementById('rSes');
+  if (!DATA.sessions.length) { el.innerHTML = '<div class="empty">Sin sesiones.</div>'; return; }
+  el.innerHTML = DATA.sessions.slice().reverse().map(function(ses) {
+    var stu = DATA.students.filter(function(s) {
+      return (!ses.course || s.course === ses.course) && (!ses.subject || s.subject === ses.subject);
+    });
+    var tot = stu.length, pr = parseInt(ses.totalPresent) || 0;
+    var pct = tot > 0 ? Math.round((pr/tot)*100) : 0;
+    var col = pct >= 75 ? 'var(--gr)' : pct >= 50 ? 'var(--am)' : 'var(--re)';
+    return '<div class="card" style="margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+      '<div><div style="font-size:15px;font-weight:800">' + (ses.subject||'-') + ' - ' + (ses.course||'Todos') + '</div>' +
+      '<div style="font-size:10px;color:var(--mu)">' + ses.date + ' - ' + (ses.regenteName||ses.registeredBy||'-') + '</div></div>' +
+      '<div style="text-align:right"><div style="font-size:24px;font-weight:800;color:' + col + '">' + pct + '%</div>' +
+      '<div style="font-size:10px;color:var(--mu)">' + pr + '/' + tot + '</div></div></div>' +
+      '<div class="pb"><div class="pf" style="width:' + pct + '%;background:' + col + '"></div></div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderStuR() {
+  var body = document.getElementById('rStuB');
+  var fc = document.getElementById('rCrs').value;
+  var list = DATA.students.filter(function(s) { return !fc || s.course === fc; });
+  if (!list.length) { body.innerHTML = '<tr><td colspan="6" class="empty">Sin datos</td></tr>'; return; }
+  body.innerHTML = list.map(function(s) {
+    var rel = DATA.sessions.filter(function(ses) {
+      return (!ses.course || ses.course === s.course) && (!ses.subject || ses.subject === s.subject);
+    });
+    var tot = rel.length;
+    var att = DATA.attendance.filter(function(a) { return a.studentId === s.id; }).length;
+    var pct = tot > 0 ? Math.round((att/tot)*100) : 0;
+    var cls = pct >= 75 ? 'bgr' : pct >= 50 ? 'bam' : 'brd';
+    return '<tr><td><strong>' + s.name + '</strong></td><td>' + s.course + '</td><td>' + s.subject + '</td>' +
+      '<td>' + tot + '</td><td>' + att + '</td>' +
+      '<td><span class="badge ' + cls + '">' + pct + '%</span></td></tr>';
+  }).join('');
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+var tT;
+function toast(msg, isErr) {
+  var t = document.getElementById('toast');
+  t.innerHTML = '<span style="color:' + (isErr ? 'var(--re)' : 'var(--gr)') + '">' + (isErr ? 'X' : 'OK') + '</span> ' + msg;
+  t.classList.add('on');
+  clearTimeout(tT);
+  tT = setTimeout(function() { t.classList.remove('on'); }, 3000);
+}
+
+function showLoad(v) {
+  var el = document.getElementById('load');
+  if (v) { el.innerHTML = '<div class="spin"></div><p>Procesando...</p>'; el.style.display = 'flex'; }
+  else el.style.display = 'none';
+}
+</script>
+</body>
+</html>
